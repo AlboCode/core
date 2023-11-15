@@ -11,7 +11,7 @@ from cat.mad_hatter.decorators import hook
 
 
 @hook(priority=0)
-def agent_prompt_prefix(prefix, cat) -> str:
+def agent_prompt_prefix(prefix, working_memory, cat) -> str:
     """Hook the main prompt prefix.
 
     Allows to edit the prefix of the *Main Prompt* that the Cat feeds to the *Agent*.
@@ -23,6 +23,8 @@ def agent_prompt_prefix(prefix, cat) -> str:
     ----------
     cat : CheshireCat
         Cheshire Cat instance.
+
+    working_memory : WorkingMemory
 
     Returns
     -------
@@ -53,6 +55,7 @@ def agent_prompt_instructions(instructions: str, cat) -> str:
     cat : CheshireCat
         Cheshire Cat instance.
 
+
     Returns
     -------
     instructions : str
@@ -78,7 +81,7 @@ def agent_prompt_instructions(instructions: str, cat) -> str:
 
 
 @hook(priority=0)
-def agent_prompt_suffix(prompt_suffix: str, cat) -> str:
+def agent_prompt_suffix(prompt_suffix: str, working_memory, cat) -> str:
     """Hook the main prompt suffix.
 
     Allows to edit the suffix of the *Main Prompt* that the Cat feeds to the *Agent*.
@@ -90,6 +93,8 @@ def agent_prompt_suffix(prompt_suffix: str, cat) -> str:
     ----------
     cat : CheshireCat
         Cheshire Cat instance.
+
+    working_memory : WorkingMemory
 
     Returns
     -------
