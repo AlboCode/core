@@ -55,42 +55,54 @@ class CheshireCat:
     """
 
     def __init__(self):
-        """Cat initialization.
+        self.core_auth_handler = None
+        self.custom_auth_handler = None
+        self.embedder = None
+        self._llm = None
+        self.rabbit_hole = None
+        self.main_agent = None
+        self.mad_hatter = None
+        self.white_rabbit = None
+    
+    
+    async def init(self):
 
+        """Cat initialization.
+    
         At init time the Cat executes the bootstrap.
         """
-
+    
         # bootstrap the Cat! ^._.^
-
+    
         # load AuthHandler
         self.load_auth()
-
+    
         # Start scheduling system
         self.white_rabbit = WhiteRabbit()
-
+    
         # instantiate MadHatter (loads all plugins' hooks and tools)
         self.mad_hatter = MadHatter()
-
+    
         # allows plugins to do something before cat components are loaded
         self.mad_hatter.execute_hook("before_cat_bootstrap", cat=self)
-
+    
         # load LLM and embedder
         self.load_natural_language()
-
+    
         # Load memories (vector collections and working_memory)
-        self.load_memory()
-
+        await self.load_memory()
+    
         # After memory is loaded, we can get/create tools embeddings
         # every time the mad_hatter finishes syncing hooks, tools and forms, it will notify the Cat (so it can embed tools in vector memory)
         self.mad_hatter.on_finish_plugins_sync_callback = self.embed_procedures
-        self.embed_procedures()  # first time launched manually
-
+        await self.embed_procedures()  # first time launched manually
+    
         # Main agent instance (for reasoning)
         self.main_agent = MainAgent()
-
+    
         # Rabbit Hole Instance
         self.rabbit_hole = RabbitHole(self)  # :(
-
+    
         # allows plugins to do something after the cat bootstrap is complete
         self.mad_hatter.execute_hook("after_cat_bootstrap", cat=self)
 
@@ -280,14 +292,14 @@ class CheshireCat:
         self.custom_auth_handler = auth_handler
         self.core_auth_handler = CoreAuthHandler()
 
-    def load_memory(self):
+    async def load_memory(self):
         """Load LongTerMemory and WorkingMemory."""
         # Memory
 
         # Get embedder size (langchain classes do not store it)
         embedder_size = len(self.embedder.embed_query("hello world"))
 
-        # Get embedder name (useful for for vectorstore aliases)
+        # Get embedder name (useful for vectorstore aliases)
         if hasattr(self.embedder, "model"):
             embedder_name = self.embedder.model
         elif hasattr(self.embedder, "repo_id"):
@@ -300,7 +312,8 @@ class CheshireCat:
             "embedder_name": embedder_name,
             "embedder_size": embedder_size,
         }
-        self.memory = LongTermMemory(vector_memory_config=vector_memory_config)
+        self.memory = LongTermMemory()
+        await self.memory.init_memory_config(vector_memory_config)
 
     def build_embedded_procedures_hashes(self, embedded_procedures):
         hashes = {}
@@ -332,9 +345,9 @@ class CheshireCat:
                     }
         return hashes
 
-    def embed_procedures(self):
+    async def embed_procedures(self):
         # Retrieve from vectorDB all procedural embeddings
-        embedded_procedures = self.memory.vectors.procedural.get_all_points()
+        embedded_procedures = await self.memory.vectors.procedural.get_all_points()
         embedded_procedures_hashes = self.build_embedded_procedures_hashes(
             embedded_procedures
         )
@@ -357,7 +370,7 @@ class CheshireCat:
         ]
         if points_to_be_deleted_ids:
             log.warning(f"Deleting triggers: {points_to_be_deleted}")
-            self.memory.vectors.procedural.delete_points(points_to_be_deleted_ids)
+            await self.memory.vectors.procedural.delete_points(points_to_be_deleted_ids)
 
         active_triggers_to_be_embedded = [
             active_procedures_hashes[p] for p in points_to_be_embedded

@@ -44,6 +44,8 @@ async def lifespan(app: FastAPI):
     # - Starlette allows this: https://www.starlette.io/applications/#storing-state-on-the-app-instance
     app.state.ccat = CheshireCat()
 
+    await app.state.ccat.init()
+
     # Dict of pseudo-sessions (key is the user_id)
     app.state.strays = {}
 

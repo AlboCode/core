@@ -3,7 +3,7 @@ import socket
 from cat.utils import extract_domain_from_url, is_https
 
 from qdrant_client import QdrantClient
-
+from qdrant_client import AsyncQdrantClient
 from cat.memory.vector_memory_collection import VectorMemoryCollection
 from cat.log import log
 from cat.env import get_env
@@ -15,18 +15,23 @@ class VectorMemory:
     local_vector_db = None
 
     def __init__(
-        self,
-        embedder_name=None,
-        embedder_size=None,
+        self
     ) -> None:
         # connects to Qdrant and creates self.vector_db attribute
+        self.vector_db = None
         self.connect_to_vector_memory()
+        self.collections = {}
 
+    async def init_collections(
+            self,
+            embedder_name=None,
+            embedder_size=None,
+    ) -> None:
         # Create vector collections
         # - Episodic memory will contain user and eventually cat utterances
         # - Declarative memory will contain uploaded documents' content
         # - Procedural memory will contain tools and knowledge on how to do things
-        self.collections = {}
+
         for collection_name in ["episodic", "declarative", "procedural"]:
             # Instantiate collection
             collection = VectorMemoryCollection(
@@ -54,7 +59,7 @@ class VectorMemory:
 
             # reconnect only if it's the first boot and not a reload
             if VectorMemory.local_vector_db is None:
-                VectorMemory.local_vector_db = QdrantClient(
+                VectorMemory.local_vector_db = AsyncQdrantClient(
                     path=db_path, force_disable_check_same_thread=True
                 )
 
@@ -76,7 +81,7 @@ class VectorMemory:
                 s.close()
 
             # Qdrant vector DB client
-            self.vector_db = QdrantClient(
+            self.vector_db = AsyncQdrantClient(
                 host=qdrant_host,
                 port=qdrant_port,
                 https=qdrant_https,

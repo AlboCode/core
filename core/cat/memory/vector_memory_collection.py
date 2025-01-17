@@ -41,21 +41,25 @@ class VectorMemoryCollection:
         self.embedder_name = embedder_name
         self.embedder_size = embedder_size
 
-        # Check if memory collection exists also in vectorDB, otherwise create it
-        self.create_db_collection_if_not_exists()
 
-        # Check db collection vector size is same as embedder size
-        self.check_embedding_size()
 
         # log collection info
         log.debug(f"Collection {self.collection_name}:")
         log.debug(self.client.get_collection(self.collection_name))
 
-    def check_embedding_size(self):
+
+    async def init_embedder(self):
+        # Check if memory collection exists also in vectorDB, otherwise create it
+        await self.create_db_collection_if_not_exists()
+
+        # Check db collection vector size is same as embedder size
+        await self.check_embedding_size()
+
+    async def check_embedding_size(self):
         # having the same size does not necessarily imply being the same embedder
         # having vectors with the same size but from diffent embedder in the same vector space is wrong
         same_size = (
-            self.client.get_collection(self.collection_name).config.params.vectors.size
+            await self.client.get_collection(self.collection_name).config.params.vectors.size
             == self.embedder_size
         )
         alias = self.embedder_name + "_" + self.collection_name
@@ -73,16 +77,16 @@ class VectorMemoryCollection:
             # SAVE_MEMORY_SNAPSHOTS=false
             if get_env("CCAT_SAVE_MEMORY_SNAPSHOTS") == "true":
                 # dump collection on disk before deleting
-                self.save_dump()
+                await self.save_dump()
                 log.info(f"Dump '{self.collection_name}' completed")
 
             self.client.delete_collection(self.collection_name)
             log.warning(f"Collection '{self.collection_name}' deleted")
-            self.create_collection()
+            await self.create_collection()
 
-    def create_db_collection_if_not_exists(self):
+    async def create_db_collection_if_not_exists(self):
         # is collection present in DB?
-        collections_response = self.client.get_collections()
+        collections_response = await self.client.get_collections()
         for c in collections_response.collections:
             if c.name == self.collection_name:
                 # collection exists. Do nothing
@@ -91,10 +95,10 @@ class VectorMemoryCollection:
                 )
                 return
 
-        self.create_collection()
+        await self.create_collection()
 
     # create collection
-    def create_collection(self):
+    async def create_collection(self):
         log.warning(f"Creating collection '{self.collection_name}' ...")
         self.client.recreate_collection(
             collection_name=self.collection_name,
@@ -111,7 +115,7 @@ class VectorMemoryCollection:
             # shard_number=3,
         )
 
-        self.client.update_collection_aliases(
+        await self.client.update_collection_aliases(
             change_aliases_operations=[
                 CreateAliasOperation(
                     create_alias=CreateAlias(
@@ -158,7 +162,7 @@ class VectorMemoryCollection:
 
         return out
 
-    def add_point(
+    async def add_point(
         self,
         content: str,
         vector: Iterable,
@@ -190,7 +194,7 @@ class VectorMemoryCollection:
             vector=vector,
         )
 
-        update_status = self.client.upsert(
+        update_status = await self.client.upsert(
             collection_name=self.collection_name, points=[point], **kwargs
         )
 
@@ -200,27 +204,27 @@ class VectorMemoryCollection:
         else:
             return None
 
-    def delete_points_by_metadata_filter(self, metadata=None):
-        res = self.client.delete(
+    async def delete_points_by_metadata_filter(self, metadata=None):
+        res = await self.client.delete(
             collection_name=self.collection_name,
             points_selector=self._qdrant_filter_from_dict(metadata),
         )
         return res
 
     # delete point in collection
-    def delete_points(self, points_ids):
-        res = self.client.delete(
+    async def delete_points(self, points_ids):
+        res = await self.client.delete(
             collection_name=self.collection_name,
             points_selector=points_ids,
         )
         return res
 
     # retrieve similar memories from embedding
-    def recall_memories_from_embedding(
+    async def recall_memories_from_embedding(
         self, embedding, metadata=None, k=5, threshold=None
     ):
         # retrieve memories
-        memories = self.client.search(
+        memories = await self.client.search(
             collection_name=self.collection_name,
             query_vector=embedding,
             query_filter=self._qdrant_filter_from_dict(metadata),
@@ -259,9 +263,9 @@ class VectorMemoryCollection:
         return langchain_documents_from_points
 
     # retrieve all the points in the collection
-    def get_all_points(self):
+    async def get_all_points(self):
         # retrieving the points
-        all_points, _ = self.client.scroll(
+        all_points, _ = await self.client.scroll(
             collection_name=self.collection_name,
             with_vectors=True,
             limit=10000,  # yeah, good for now dear :*
@@ -273,7 +277,7 @@ class VectorMemoryCollection:
         return isinstance(self.client._client, QdrantRemote)
 
     # dump collection on disk before deleting
-    def save_dump(self, folder="dormouse/"):
+    async def save_dump(self, folder="dormouse/"):
         # only do snapshotting if using remote Qdrant
         if not self.db_is_remote():
             return
@@ -287,7 +291,7 @@ class VectorMemoryCollection:
             log.warning("Directory dormouse does NOT exists, creating it.")
             os.mkdir(folder)
 
-        self.snapshot_info = self.client.create_snapshot(
+        self.snapshot_info = await self.client.create_snapshot(
             collection_name=self.collection_name
         )
         snapshot_url_in = (

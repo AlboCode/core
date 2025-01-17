@@ -49,7 +49,7 @@ def test_stray_classify(stray):
     assert label is None  # TODO: should be "negative"
 
 
-def test_recall_to_working_memory(stray):
+async def test_recall_to_working_memory(stray):
     # empty working memory / episodic
     assert stray.working_memory.episodic_memories == []
 
@@ -60,7 +60,7 @@ def test_recall_to_working_memory(stray):
     stray.loop.run_until_complete(stray.__call__(msg))
 
     # recall after episodic memory was stored
-    stray.recall_relevant_memories_to_working_memory(msg_text)
+    await stray.recall_relevant_memories_to_working_memory(msg_text)
 
     assert stray.working_memory.recall_query == msg_text
     assert len(stray.working_memory.episodic_memories) == 1

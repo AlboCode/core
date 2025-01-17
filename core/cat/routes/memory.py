@@ -49,7 +49,7 @@ async def recall_memories_from_text(
         else:
             user_filter = None
 
-        memories = vector_memory.collections[c].recall_memories_from_embedding(
+        memories = await vector_memory.collections[c].recall_memories_from_embedding(
             query_embedding, k=k, metadata=user_filter
         )
 
@@ -215,7 +215,7 @@ async def delete_memory_point(
         )
 
     # check if point exists
-    points = vector_memory.vector_db.retrieve(
+    points = await vector_memory.vector_db.retrieve(
         collection_name=collection_id,
         ids=[point_id],
     )
@@ -223,7 +223,7 @@ async def delete_memory_point(
         raise HTTPException(status_code=400, detail={"error": "Point does not exist."})
 
     # delete point
-    vector_memory.collections[collection_id].delete_points([point_id])
+    await vector_memory.collections[collection_id].delete_points([point_id])
 
     return {"deleted": point_id}
 
@@ -241,7 +241,7 @@ async def delete_memory_points_by_metadata(
     vector_memory = ccat.memory.vectors
 
     # delete points
-    vector_memory.collections[collection_id].delete_points_by_metadata_filter(metadata)
+    await vector_memory.collections[collection_id].delete_points_by_metadata_filter(metadata)
 
     return {
         "deleted": []  # TODO: Qdrant does not return deleted points?

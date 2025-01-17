@@ -154,7 +154,7 @@ class StrayCat:
 
         self.__send_ws_json(error_message)
 
-    def recall_relevant_memories_to_working_memory(self, query=None):
+    async def recall_relevant_memories_to_working_memory(self, query=None):
         """Retrieve context from memory.
 
         The method retrieves the relevant memories from the vector collections that are given as context to the LLM.
@@ -257,7 +257,7 @@ class StrayCat:
 
             # recall relevant memories for collection
             vector_memory = getattr(self.memory.vectors, memory_type)
-            memories = vector_memory.recall_memories_from_embedding(**config)
+            memories = await vector_memory.recall_memories_from_embedding(**config)
 
             setattr(
                 self.working_memory, memory_key, memories
@@ -370,7 +370,7 @@ class StrayCat:
         # recall episodic and declarative memories from vector collections
         #   and store them in working_memory
         try:
-            self.recall_relevant_memories_to_working_memory()
+            await self.recall_relevant_memories_to_working_memory()
         except Exception as e:
             log.error(e)
             traceback.print_exc(e)
