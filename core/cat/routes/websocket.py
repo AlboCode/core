@@ -41,8 +41,7 @@ async def websocket_endpoint(
         # Process messages
         await receive_message(websocket, stray)
     except WebSocketDisconnect:
-        # Handle the event where the user disconnects their WebSocket.
-        stray._StrayCat__ws = None
-        log.info("WebSocket connection closed")
-    # finally:
-    #     del strays[user_id]
+            log.info("WebSocket connection closed")
+    finally:
+        stray.close()
+

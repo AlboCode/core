@@ -44,6 +44,22 @@ class StrayCat:
 
         self.__loop = asyncio.new_event_loop()
 
+    def close(self):
+        """
+        Close the StrayCat instance and its event loop.
+        """
+        try:
+            self.__loop.close()
+        except Exception as e:
+            log.error(f"Error close the StrayCat's Loop {self.__user_id}: {e}")
+
+        self.__ws = None
+        self.__loop = None
+
+        # remove any reference to the StrayCat instance here
+
+        log.info(f"StrayCat {self.__user_id} ready to GC")
+
     def __repr__(self):
         return f"StrayCat(user_id={self.user_id})"
 

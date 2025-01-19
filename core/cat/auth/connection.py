@@ -134,29 +134,14 @@ class WebSocketAuth(ConnectionAuth):
     
 
     async def get_user_stray(self, user: AuthUserInfo, connection: WebSocket) -> StrayCat:
-        strays = connection.app.state.strays
 
-        if user.id in strays.keys():
-            stray = strays[user.id]
-            # Close previus ws connection
-            if stray._StrayCat__ws:
-                await stray._StrayCat__ws.close()
-            # Set new ws connection
-            stray._StrayCat__ws = connection
-            log.info(
-                f"New websocket connection for user '{user.id}', the old one has been closed."
-            )
-            return stray
-
-        else:
-            stray = StrayCat(
-                ws=connection,
-                user_id=user.name, # TODOV2: user_id should be the user.id
-                user_data=user,
-                main_loop=asyncio.get_running_loop(),
-            )
-            strays[user.id] = stray
-            return stray
+        stray = StrayCat(
+            ws=connection,
+            user_id=user.name, # TODOV2: user_id should be the user.id
+            user_data=user,
+            main_loop=asyncio.get_running_loop(),
+        )
+        return stray
         
     def not_allowed(self, connection: WebSocket):
         raise WebSocketException(code=1004, reason="Invalid Credentials")
